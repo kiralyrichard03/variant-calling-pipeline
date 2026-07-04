@@ -1,0 +1,87 @@
+"""Whole-genome variant calling: BWA -> samtools -> bcftools."""
+
+configfile: "config/config.yaml"
+
+SAMPLE = config["sample"]["id"]
+REF = config["reference"]["fasta"]
+R1 = config["sample"]["fastq_r1"]
+R2 = config["sample"]["fastq_r2"]
+
+
+rule all:
+    input:
+        "results/qc/alignment_stats.txt",
+        "results/variants/variants.vcf.gz",
+        "results/variants/variant_summary.json",
+
+
+rule index_reference:
+    input:
+        ref=REF,
+    output:
+        fai=REF + ".fai",
+        done=touch("results/reference_index.done"),
+    shell:
+        """
+        samtools faidx {input.ref}
+        bwa index {input.ref}
+        """
+
+
+rule bwa_mem:
+    input:
+        ref=REF,
+        r1=R1,
+        r2=R2,
+        done="results/reference_index.done",
+    output:
+        bam="results/align/{sample}.sorted.bam".format(sample=SAMPLE),
+        bai="results/align/{sample}.sorted.bam.bai".format(sample=SAMPLE),
+    params:
+        sample=SAMPLE,
+    shell:
+        """
+        mkdir -p results/align
+        bwa mem -t 4 {input.ref} {input.r1} {input.r2} \
+          | samtools sort -@ 4 -o {output.bam}
+        samtools index {output.bam}
+        """
+
+
+rule alignment_stats:
+    input:
+        bam="results/align/{sample}.sorted.bam".format(sample=SAMPLE),
+    output:
+        stats="results/qc/alignment_stats.txt",
+    shell:
+        """
+        mkdir -p results/qc
+        samtools flagstat {input.bam} > {output.stats}
+        samtools stats {input.bam} >> {output.stats}
+        """
+
+
+rule call_variants:
+    input:
+        ref=REF,
+        bam="results/align/{sample}.sorted.bam".format(sample=SAMPLE),
+    output:
+        vcf="results/variants/variants.vcf.gz",
+    params:
+        min_q=config["bcftools"]["min_quality"],
+    shell:
+        """
+        mkdir -p results/variants
+        bcftools mpileup -Ou -f {input.ref} {input.bam} \
+          | bcftools call -mv -Oz -o {output.vcf}
+        bcftools index {output.vcf}
+        """
+
+
+rule parse_vcf_summary:
+    input:
+        vcf="results/variants/variants.vcf.gz",
+    output:
+        summary="results/variants/variant_summary.json",
+    script:
+        "../scripts/parse_vcf.py"

@@ -1,0 +1,24 @@
+# Variant calling pipeline configuration
+
+project_name: variant-calling-pipeline
+
+paths:
+  raw_dir: data/raw
+  reference_dir: data/reference
+  results_dir: results
+
+reference:
+  fasta: data/reference/reference.fa
+  index_prefix: data/reference/reference
+
+sample:
+  id: NA12878_chr22_demo
+  fastq_r1: data/raw/sample_R1.fastq.gz
+  fastq_r2: data/raw/sample_R2.fastq.gz
+
+bcftools:
+  min_quality: 20
+
+dataset:
+  source: 1000 Genomes Project (chr22 subset)
+  description: Portfolio demo for germline SNP/indel calling

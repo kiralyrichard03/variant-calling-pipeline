@@ -1,0 +1,12 @@
+name: variant-calling
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - snakemake>=7.32
+  - bwa
+  - samtools
+  - bcftools
+  - pytest>=8.0
