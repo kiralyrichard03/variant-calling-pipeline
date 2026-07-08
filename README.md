@@ -150,10 +150,6 @@ scripts/parse_vcf.py   VCF parser and summarizer
 tests/                 Unit tests with demo VCF
 ```
 
-## Limitations
-
-Educational/portfolio pipeline using simplified bcftools calling. For production, consider GATK Best Practices or DeepVariant. Large reference files are not committed — download separately.
-
 ## License
 
 MIT
